@@ -1,0 +1,58 @@
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: app-config
+data:
+  POSTGRES_HOST: database
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB_SESSION: users_db
+  POSTGRES_DB_HOTEL: hotels_db
+  POSTGRES_DB_PAYMENT: payments_db
+  POSTGRES_DB_LOYALTY: balances_db
+  POSTGRES_DB_BOOKING: reservations_db
+  POSTGRES_DB_REPORT: statistics_db
+  SESSION_SERVICE_HOST: session-service
+  SESSION_SERVICE_PORT: "8081"
+  BOOKING_SERVICE_HOST: booking-service
+  BOOKING_SERVICE_PORT: "8083"
+  REPORT_SERVICE_HOST: report-service
+  REPORT_SERVICE_PORT: "8086"
+  RABBIT_MQ_HOST: rabbitmq
+  RABBIT_MQ_PORT: "5672"
+  RABBIT_MQ_QUEUE_NAME: messagequeue
+  RABBIT_MQ_EXCHANGE: messagequeue-exchange
+  HOTEL_SERVICE_HOST: hotel-service
+  HOTEL_SERVICE_PORT: "8082"
+  PAYMENT_SERVICE_HOST: payment-service
+  PAYMENT_SERVICE_PORT: "8084"
+  LOYALTY_SERVICE_HOST: loyalty-service
+  LOYALTY_SERVICE_PORT: "8085"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: initdb-config
+data:
+  init.sql: |
+    DROP DATABASE IF EXISTS users_db;
+    CREATE DATABASE users_db OWNER postgres;
+
+    DROP DATABASE IF EXISTS hotels_db;
+    CREATE DATABASE hotels_db OWNER postgres;
+
+    DROP DATABASE IF EXISTS reservations_db;
+    CREATE DATABASE reservations_db OWNER postgres;
+
+    DROP DATABASE IF EXISTS payments_db;
+    CREATE DATABASE payments_db OWNER postgres;
+
+    DROP DATABASE IF EXISTS balances_db;
+    CREATE DATABASE balances_db OWNER postgres;
+
+    DROP DATABASE IF EXISTS statistics_db;
+    CREATE DATABASE statistics_db OWNER postgres;

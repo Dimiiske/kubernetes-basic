@@ -1,0 +1,593 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: rabbitmq
+  name: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: rabbitmq
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: rabbitmq
+    spec:
+      containers:
+        - image: rabbitmq:3.10-management
+          name: rabbitmq
+          ports:
+            - containerPort: 5672
+          resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: database
+  name: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: database
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: database
+    spec:
+      containers:
+        - image: dimiiske/database-service:v0.1
+          name: database
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_HOST
+      volumes:
+        - name: initdb
+          configMap:
+            name: initdb-config
+          # resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: booking-service
+  name: booking-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: booking-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: booking-service
+    spec:
+      containers:
+        - image: dimiiske/booking-service:prometheus
+          name: booking-service
+          ports:
+            - containerPort: 8083
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB_BOOKING
+            - name: RABBIT_MQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_HOST
+            - name: RABBIT_MQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_PORT
+            - name: RABBIT_MQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: RABBIT_MQ_USER
+            - name: RABBIT_MQ_QUEUE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_QUEUE_NAME
+            - name: RABBIT_MQ_EXCHANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_EXCHANGE
+            - name: RABBIT_MQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: RABBIT_MQ_PASSWORD
+            - name: PAYMENT_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: PAYMENT_SERVICE_HOST
+            - name: PAYMENT_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: PAYMENT_SERVICE_PORT
+            - name: HOTEL_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: HOTEL_SERVICE_HOST
+            - name: HOTEL_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: HOTEL_SERVICE_PORT
+            - name: LOYALTY_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOYALTY_SERVICE_HOST
+            - name: LOYALTY_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOYALTY_SERVICE_PORT
+          resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: gateway-service
+  name: gateway-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: gateway-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: gateway-service
+    spec:
+      containers:
+        - image: dimiiske/gateway-service:prometheus
+          name: gateway-service
+          ports:
+            - containerPort: 8087
+          env:
+            - name: HOTEL_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: HOTEL_SERVICE_HOST
+            - name: HOTEL_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: HOTEL_SERVICE_PORT
+            - name: BOOKING_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: BOOKING_SERVICE_HOST
+            - name: BOOKING_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: BOOKING_SERVICE_PORT
+            - name: LOYALTY_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOYALTY_SERVICE_HOST
+            - name: LOYALTY_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOYALTY_SERVICE_PORT
+            - name: SESSION_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SESSION_SERVICE_HOST
+            - name: SESSION_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SESSION_SERVICE_PORT
+            - name: REPORT_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: REPORT_SERVICE_HOST
+            - name: REPORT_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: REPORT_SERVICE_PORT
+          resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: hotel-service
+  name: hotel-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: hotel-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: hotel-service
+    spec:
+      containers:
+        - image: dimiiske/hotel-service:v0.1
+          name: hotel-service
+          ports:
+            - containerPort: 8082
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB_HOTEL
+          resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: loyalty-service
+  name: loyalty-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: loyalty-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: loyalty-service
+    spec:
+      containers:
+        - image: dimiiske/loyalty-service:v0.1
+          name: loyalty-service
+          ports:
+            - containerPort: 8085
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB_LOYALTY
+          resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: payment-service
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: payment-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: payment-service
+    spec:
+      containers:
+        - image: dimiiske/payment-service:v0.1
+          name: payment-service
+          ports:
+            - containerPort: 8084
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB_PAYMENT
+          resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: report-service
+  name: report-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: report-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: report-service
+    spec:
+      containers:
+        - image: dimiiske/report-service:prometheus
+          name: report-service
+          ports:
+            - containerPort: 8086
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB_REPORT
+            - name: RABBIT_MQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_HOST
+            - name: RABBIT_MQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_PORT
+            - name: RABBIT_MQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: RABBIT_MQ_USER
+            - name: RABBIT_MQ_QUEUE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_QUEUE_NAME
+            - name: RABBIT_MQ_EXCHANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: RABBIT_MQ_EXCHANGE
+            - name: RABBIT_MQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: RABBIT_MQ_PASSWORD
+          resources: {}
+status: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: session-service
+  name: session-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: session-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: session-service
+    spec:
+      containers:
+        - image: dimiiske/session-service:prometheus
+          name: session-service
+          ports:
+            - containerPort: 8081
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB_SESSION
+          resources: {}
+status: {}
